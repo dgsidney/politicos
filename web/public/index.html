@@ -1,18 +1,211 @@
 <!doctype html>
 <html lang="pt-br">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Termômetro Político · SP 2026 (piloto)</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Termômetro Político · SP 2026</title>
+<style>
+  :root{
+    --bg:#f4f6f9; --card:#fff; --card2:#fbfcfe; --ink:#161a22; --muted:#5c6675; --faint:#8a93a2; --line:#e6e9f0;
+    --accent:#2563eb; --accent-soft:#eaf0ff;
+    --verde:#16a34a; --verde-bg:#e7f6ec; --laranja:#e08a1e; --laranja-bg:#fdf1de;
+    --vermelho:#dc2f3b; --vermelho-bg:#fdeaec; --cinza:#7a8494; --cinza-bg:#eef1f5;
+    --shadow:0 1px 2px rgba(20,30,50,.04),0 6px 20px rgba(20,30,50,.05); --radius:16px; --maxw:1060px;
+  }
+  [data-theme="dark"]{
+    --bg:#0f1115; --card:#171a21; --card2:#1c2029; --ink:#e9ebf0; --muted:#a6adba; --faint:#727a89; --line:#2a2f3a;
+    --accent:#6ea8fe; --accent-soft:#1a2333;
+    --verde:#3fb27f; --verde-bg:#12231b; --laranja:#e0a458; --laranja-bg:#241d10;
+    --vermelho:#e0707a; --vermelho-bg:#241315; --cinza:#8a909c; --cinza-bg:#1d212b;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:22px 18px 60px}
+  .top{display:flex;align-items:center;gap:14px}
+  .logo{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,var(--accent),#7aa2ff);display:flex;align-items:center;justify-content:center;font-size:20px}
+  .top h1{font-size:19px;margin:0}
+  .top .slogan{font-size:13px;color:var(--muted);margin:2px 0 0}
+  .top .right{margin-left:auto;display:flex;align-items:center;gap:10px}
+  .proto{font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);background:var(--accent-soft);padding:3px 9px;border-radius:999px}
+  .toggle{border:1px solid var(--line);background:var(--card);color:var(--muted);border-radius:999px;padding:6px 11px;font-size:12.5px;cursor:pointer}
+  .disclaimer{margin:16px 0 18px;background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:12px;padding:11px 14px;color:var(--muted);font-size:12.5px;box-shadow:var(--shadow)}
+  .disclaimer b{color:var(--ink)}
+  .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 16px}
+  .tabs{display:flex;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px}
+  .tab{font-size:13px;color:var(--muted);padding:6px 14px;border-radius:999px}
+  .tab.on{color:#fff;background:var(--accent)} .tab.off{opacity:.5}
+  .kpis{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:12px;margin-bottom:14px}
+  .kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:15px 16px;box-shadow:var(--shadow)}
+  .kpi .k{font-size:12px;color:var(--faint)} .kpi .v{font-size:26px;font-weight:650;margin-top:4px;letter-spacing:-.5px} .kpi .sub{font-size:12px;color:var(--muted);margin-top:3px}
+  .kpi.tint-l .v{color:var(--laranja)} .kpi.tint-r .v{color:var(--vermelho)} .kpi.tint-c .v{color:var(--cinza)}
+  .donutwrap{display:flex;align-items:center;gap:14px}
+  .donut{width:78px;height:78px;border-radius:50%;flex:0 0 auto;position:relative}
+  .donut::after{content:"";position:absolute;inset:12px;border-radius:50%;background:var(--card)}
+  .donut b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:17px;z-index:1}
+  .donut-legend{font-size:12px;color:var(--muted);display:grid;gap:4px}
+  .li{display:flex;align-items:center;gap:6px} .dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+  .dot.verde{background:var(--verde)}.dot.laranja{background:var(--laranja)}.dot.vermelho{background:var(--vermelho)}.dot.cinza{background:var(--cinza)}
+  h2.section{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin:26px 0 12px;font-weight:600}
+  .cardgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .ccard{border:1px solid var(--line);border-radius:14px;background:var(--card2);padding:14px;cursor:pointer;transition:border-color .15s}
+  .ccard:hover{border-color:var(--accent)}
+  .ccard .hd{display:flex;align-items:center;gap:11px}
+  .avatar{width:44px;height:44px;border-radius:11px;background:var(--cinza-bg);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--faint);flex:0 0 auto}
+  .ccard .nm{font-size:15px;font-weight:600} .ccard .mt{font-size:12px;color:var(--faint)}
+  .pill{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;padding:5px 11px;border-radius:999px;margin-top:12px}
+  .pill.verde{color:var(--verde);background:var(--verde-bg)} .pill.laranja{color:var(--laranja);background:var(--laranja-bg)}
+  .pill.vermelho{color:var(--vermelho);background:var(--vermelho-bg)} .pill.cinza{color:var(--cinza);background:var(--cinza-bg)}
+  .party{border-top:1px solid var(--line);padding:12px 0} .party:first-child{border-top:0}
+  .party .ph2{display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:8px} .party .ph2 .tot{color:var(--faint);font-size:12px}
+  .stack{display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--cinza-bg)} .stack>span{display:block;height:100%}
+  .panel{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 16px}
+  /* modal / gaveta */
+  .mask{position:fixed;inset:0;background:rgba(10,15,25,.5);display:none;align-items:center;justify-content:center;padding:18px;z-index:10}
+  .mask.on{display:flex}
+  .modal{background:var(--card);border:1px solid var(--line);border-radius:16px;max-width:560px;width:100%;max-height:86vh;overflow:auto;box-shadow:var(--shadow)}
+  .modal .mh{display:flex;align-items:flex-start;gap:12px;padding:18px 18px 12px;border-bottom:1px solid var(--line)}
+  .modal .mh .x{margin-left:auto;border:none;background:none;font-size:20px;color:var(--faint);cursor:pointer}
+  .modal .mb{padding:14px 18px 18px}
+  .drawer{border:1px solid var(--line);border-radius:11px;background:var(--card2);padding:12px 13px;margin-bottom:10px}
+  .drawer .dh{font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .kv{display:grid;grid-template-columns:110px 1fr;gap:4px 10px;margin:9px 0 0;font-size:12.5px}
+  .kv dt{color:var(--faint)} .kv dd{margin:0}
+  .src{display:inline-flex;gap:6px;margin-top:10px;font-size:12.5px;color:var(--accent);text-decoration:none;border:1px solid var(--accent);background:var(--accent-soft);padding:5px 10px;border-radius:8px}
+  .note{font-size:11.5px;color:var(--faint);margin-top:8px}
+  footer{margin-top:28px;padding-top:14px;border-top:1px solid var(--line);color:var(--faint);font-size:12px}
+  @media (max-width:820px){.kpis{grid-template-columns:1fr 1fr}.cardgrid{grid-template-columns:1fr}}
+</style>
 </head>
 <body>
-  <!-- Placeholder do scaffold (grupo A).
-       FV-F1 porta aqui o layout do mockup v2:
-       _bmad-output/planning-artifacts/mockup-piloto-sp2026-v2.html -->
-  <main style="font-family:system-ui;max-width:640px;margin:60px auto;padding:0 20px">
-    <h1>🗳️ Termômetro Político · SP 2026</h1>
-    <p>Piloto em construção. Front (dashboard) entra na tarefa FV-F.</p>
-    <p><a href="/api/governador">/api/governador</a> — endpoint de leitura (FV-E1).</p>
-  </main>
+<div class="wrap">
+  <div class="top">
+    <span class="logo">🗳️</span>
+    <div><h1>Termômetro Político · SP 2026</h1><p class="slogan">Transparência que dá pra entender. Política em dados oficiais.</p></div>
+    <div class="right">
+      <span class="proto">piloto</span>
+      <button class="toggle" id="tgl">🌙 Escuro</button>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    <b>Agregador de fatos oficiais.</b> A cor sinaliza o que <b>requer atenção — não é acusação</b>.
+    <i>Sub judice</i> ou aguardando julgamento <b>não é condenação</b>. Cada informação traz a fonte e a data.
+  </div>
+
+  <div class="filters">
+    <div class="tabs">
+      <span class="tab on">Governador</span>
+      <span class="tab off">Dep. Federal</span>
+      <span class="tab off">Dep. Estadual</span>
+    </div>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <h2 class="section">Candidatos a Governador · SP</h2>
+  <div class="cardgrid" id="grid"></div>
+
+  <h2 class="section">Por partido · contagem</h2>
+  <div class="panel" id="parties"></div>
+
+  <footer id="foot">Fonte: TSE (Dados Abertos + DivulgaCandContas).</footer>
+</div>
+
+<div class="mask" id="mask"><div class="modal" id="modal"></div></div>
+
+<script>
+const LABEL = { verde:"Sem apontamento", laranja:"Requer atenção", vermelho:"Ato consumado", cinza:"Aguardando análise" };
+const COLORS = { verde:"var(--verde)", laranja:"var(--laranja)", vermelho:"var(--vermelho)", cinza:"var(--cinza)" };
+const ORDER = ["verde","laranja","vermelho","cinza"];
+
+document.getElementById("tgl").onclick = function(){
+  const dark = document.body.getAttribute("data-theme")==="dark";
+  document.body.setAttribute("data-theme", dark?"light":"dark");
+  this.textContent = dark ? "🌙 Escuro" : "☀️ Claro";
+};
+
+function esc(s){ return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
+
+async function boot(){
+  let data;
+  try { data = await (await fetch("/api/governador")).json(); }
+  catch(e){ document.getElementById("grid").innerHTML = "<p>Erro ao carregar dados.</p>"; return; }
+  const cands = data.candidatos || [];
+  renderKpis(cands); renderGrid(cands); renderParties(cands);
+}
+
+function renderKpis(cands){
+  const c = { verde:0, laranja:0, vermelho:0, cinza:0 };
+  cands.forEach(x => c[x.balde ?? "cinza"]++);
+  const total = cands.length || 1;
+  let acc = 0; const segs = ORDER.map(b=>{ const from=acc/total*360; acc+=c[b]; const to=acc/total*360; return `${COLORS[b]} ${from}deg ${to}deg`; }).join(",");
+  document.getElementById("kpis").innerHTML = `
+    <div class="kpi"><div class="k">Candidatos monitorados</div>
+      <div class="donutwrap">
+        <div class="donut" style="background:conic-gradient(${segs})"><b>${cands.length}</b></div>
+        <div class="donut-legend">
+          <span class="li"><span class="dot verde"></span> ${c.verde} sem apontamento</span>
+          <span class="li"><span class="dot laranja"></span> ${c.laranja} requer atenção</span>
+          <span class="li"><span class="dot vermelho"></span> ${c.vermelho} ato consumado</span>
+          <span class="li"><span class="dot cinza"></span> ${c.cinza} aguardando</span>
+        </div>
+      </div></div>
+    <div class="kpi tint-l"><div class="k">Requerem atenção</div><div class="v">${c.laranja}</div><div class="sub">trâmite não julgado</div></div>
+    <div class="kpi tint-r"><div class="k">Ato consumado</div><div class="v">${c.vermelho}</div><div class="sub">indeferido / inelegível</div></div>
+    <div class="kpi tint-c"><div class="k">Aguardando análise</div><div class="v">${c.cinza}</div><div class="sub">registro não julgado</div></div>`;
+}
+
+function renderGrid(cands){
+  document.getElementById("grid").innerHTML = cands.map(x=>{
+    const b = x.balde ?? "cinza";
+    return `<div class="ccard" data-sq="${esc(x.sq_candidato)}">
+      <div class="hd"><div class="avatar">👤</div>
+        <div><div class="nm">${esc(x.nome_urna || x.nome)}</div><div class="mt">${esc(x.partido||"—")} · nº ${esc(x.numero||"")}</div></div></div>
+      <span class="pill ${b}"><span class="dot ${b}"></span> ${LABEL[b]}</span>
+    </div>`;
+  }).join("");
+  document.querySelectorAll(".ccard").forEach(el=> el.onclick=()=>abrir(el.dataset.sq));
+}
+
+function renderParties(cands){
+  const by = {};
+  cands.forEach(x=>{ const p=x.partido||"—"; (by[p] ||= {verde:0,laranja:0,vermelho:0,cinza:0,total:0}); by[p][x.balde??"cinza"]++; by[p].total++; });
+  document.getElementById("parties").innerHTML = Object.entries(by).sort((a,b)=>b[1].total-a[1].total).map(([p,c])=>{
+    const seg = ORDER.map(b=> c[b] ? `<span style="width:${c[b]/c.total*100}%;background:${COLORS[b]}"></span>`:"").join("");
+    const counts = ORDER.filter(b=>c[b]).map(b=>`<span class="li"><span class="dot ${b}"></span>${c[b]}</span>`).join(" &nbsp; ");
+    return `<div class="party"><div class="ph2"><b>${esc(p)}</b><span class="tot">${c.total} candidato(s)</span></div>
+      <div class="stack">${seg}</div><div style="margin-top:7px;font-size:12px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap">${counts}</div></div>`;
+  }).join("");
+}
+
+async function abrir(sq){
+  const mask=document.getElementById("mask"), modal=document.getElementById("modal");
+  modal.innerHTML = "<div class='mb'>Carregando…</div>"; mask.classList.add("on");
+  let d; try{ d = await (await fetch("/api/candidato/"+encodeURIComponent(sq))).json(); }catch(e){ modal.innerHTML="<div class='mb'>Erro.</div>"; return; }
+  const c = d.candidato || {}; const b = c.balde ?? "cinza";
+  const gavetas = (d.atos||[]).map(a=>`
+    <div class="drawer"><div class="dh"><span class="dot ${b}"></span> ${esc(a.descricao||a.tipo)}</div>
+      <dl class="kv">
+        ${a.orgao?`<dt>Órgão</dt><dd>${esc(a.orgao)}</dd>`:""}
+        ${a.numero_processo?`<dt>Processo</dt><dd>${esc(a.numero_processo)}</dd>`:""}
+        ${a.situacao?`<dt>Situação</dt><dd>${esc(a.situacao)}</dd>`:""}
+      </dl>
+      ${a.fonte_url?`<a class="src" href="${esc(a.fonte_url)}" target="_blank" rel="noopener">🔗 Ver no DivulgaCandContas</a>`:""}
+      <p class="note">Fonte atualizada em ${esc(a.fonte_coletada_em||"—")} · trâmite ≠ condenação</p>
+    </div>`).join("");
+  modal.innerHTML = `
+    <div class="mh"><div class="avatar">👤</div>
+      <div><div class="nm" style="font-size:17px;font-weight:600">${esc(c.nome_urna||c.nome||"")}</div>
+        <div class="mt" style="font-size:12.5px;color:var(--faint)">${esc(c.partido||"")} · nº ${esc(c.numero||"")} · ${esc(c.cargo||"")} ${esc(c.sg_uf||"")}</div></div>
+      <button class="x" id="closeM">×</button></div>
+    <div class="mb"><span class="pill ${b}" style="margin:0 0 12px"><span class="dot ${b}"></span> ${LABEL[b]}</span>
+      ${gavetas || "<p class='note'>Sem atos registrados na fonte.</p>"}</div>`;
+  document.getElementById("closeM").onclick=()=>mask.classList.remove("on");
+}
+document.getElementById("mask").onclick=e=>{ if(e.target.id==="mask") e.currentTarget.classList.remove("on"); };
+
+boot();
+</script>
 </body>
 </html>

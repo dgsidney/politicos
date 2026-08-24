@@ -7,6 +7,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "ingest:bulk": "node scripts/ingest-bulk.mjs",
+    "ingest:atos": "node scripts/ingest-atos.mjs",
     "dev:ingest": "wrangler dev --config worker/wrangler.jsonc",
     "dev:web": "wrangler pages dev web/public",
     "db:apply:local": "wrangler d1 migrations apply politicos-db --local --config worker/wrangler.jsonc",
