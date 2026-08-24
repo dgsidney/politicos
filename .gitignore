@@ -1,0 +1,17 @@
+node_modules/
+.wrangler/
+.dev.vars
+.env
+.env.*
+dist/
+*.log
+
+# repo PÚBLICO — não versionar tooling/estado interno nem saídas de planejamento
+.claude/
+.agent/
+.agents/
+_bmad/
+_bmad-output/
+
+# Se você QUISER publicar os mockups/docs de planejamento, comente a linha
+# _bmad-output/ acima. Mas confira antes que não há segredos nem dado real flagado.

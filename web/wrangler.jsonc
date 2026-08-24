@@ -1,0 +1,15 @@
+{
+  // Front — Cloudflare Pages. Serve o dashboard estático + Pages Functions de leitura.
+  // Mesmo D1 do Worker de ingestão (mesmo database_id).
+  "name": "politicos-web",
+  "pages_build_output_dir": "public",
+  "compatibility_date": "2026-08-01",
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "politicos-db",
+      "database_id": "766900d2-14b0-4c60-b608-1a09456ebb18"
+    }
+  ]
+}

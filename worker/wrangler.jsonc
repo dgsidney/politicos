@@ -1,0 +1,25 @@
+{
+  // Worker de INGESTÃO — pipeline de dados (cron + trigger manual).
+  // Compartilha o mesmo D1 com o Pages (web/wrangler.jsonc).
+  "name": "politicos-ingest",
+  "main": "src/index.js",
+  "compatibility_date": "2026-08-01",
+  "observability": { "enabled": true },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "politicos-db",
+      "database_id": "766900d2-14b0-4c60-b608-1a09456ebb18",
+      "migrations_dir": "../db/migrations"
+    }
+  ],
+
+  "r2_buckets": [
+    { "binding": "RAW", "bucket_name": "raw-tse" }
+  ],
+
+  // Cron desligado no início — rodar a ingestão manual via GET /run em dev.
+  // Ligar depois (ex.: "0 9 * * *" = 09:00 UTC diário).
+  "triggers": { "crons": [] }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "politicos",
+  "private": true,
+  "type": "module",
+  "description": "Portal de transparência política — agregador de fatos com fonte (piloto SP 2026)",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "dev:ingest": "wrangler dev --config worker/wrangler.jsonc",
+    "dev:web": "wrangler pages dev web/public",
+    "db:apply:local": "wrangler d1 migrations apply politicos-db --local --config worker/wrangler.jsonc",
+    "db:apply:remote": "wrangler d1 migrations apply politicos-db --remote --config worker/wrangler.jsonc",
+    "deploy:ingest": "wrangler deploy --config worker/wrangler.jsonc",
+    "deploy:web": "wrangler pages deploy web/public"
+  },
+  "devDependencies": {
+    "wrangler": "^4",
+    "vitest": "^2"
+  }
+}
