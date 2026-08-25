@@ -94,16 +94,16 @@
   </div>
 
   <div class="filters">
-    <div class="tabs">
-      <span class="tab on">Governador</span>
-      <span class="tab off">Dep. Federal</span>
-      <span class="tab off">Dep. Estadual</span>
+    <div class="tabs" id="tabs">
+      <span class="tab on"    data-cargo="governador">Governador</span>
+      <span class="tab off"   data-cargo="deputado-federal">Dep. Federal</span>
+      <span class="tab off"   data-cargo="deputado-estadual">Dep. Estadual</span>
     </div>
   </div>
 
   <div class="kpis" id="kpis"></div>
 
-  <h2 class="section">Candidatos a Governador · SP</h2>
+  <h2 class="section" id="secTitle">Candidatos a Governador · SP</h2>
   <div class="cardgrid" id="grid"></div>
 
   <h2 class="section">Por partido · contagem</h2>
@@ -118,6 +118,11 @@
 const LABEL = { verde:"Sem apontamento", laranja:"Requer atenção", vermelho:"Ato consumado", cinza:"Aguardando análise" };
 const COLORS = { verde:"var(--verde)", laranja:"var(--laranja)", vermelho:"var(--vermelho)", cinza:"var(--cinza)" };
 const ORDER = ["verde","laranja","vermelho","cinza"];
+const CARGO_TITULO = {
+  "governador": "Candidatos a Governador · SP",
+  "deputado-federal": "Candidatos a Deputado Federal · SP",
+  "deputado-estadual": "Candidatos a Deputado Estadual · SP",
+};
 
 document.getElementById("tgl").onclick = function(){
   const dark = document.body.getAttribute("data-theme")==="dark";
@@ -127,13 +132,27 @@ document.getElementById("tgl").onclick = function(){
 
 function esc(s){ return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 
-async function boot(){
+async function carregar(cargoSlug){
+  document.getElementById("secTitle").textContent = CARGO_TITULO[cargoSlug] || "Candidatos";
+  document.getElementById("grid").innerHTML = "<p style='color:var(--faint);font-size:13px'>Carregando…</p>";
+  document.getElementById("kpis").innerHTML = "";
+  document.getElementById("parties").innerHTML = "";
   let data;
-  try { data = await (await fetch("/api/governador")).json(); }
+  try { data = await (await fetch("/api/candidatos/" + encodeURIComponent(cargoSlug))).json(); }
   catch(e){ document.getElementById("grid").innerHTML = "<p>Erro ao carregar dados.</p>"; return; }
   const cands = data.candidatos || [];
   renderKpis(cands); renderGrid(cands); renderParties(cands);
 }
+
+document.getElementById("tabs").addEventListener("click", (e) => {
+  const t = e.target.closest(".tab");
+  if (!t || t.classList.contains("on")) return;
+  document.querySelectorAll("#tabs .tab").forEach(x => { x.classList.remove("on"); x.classList.add("off"); });
+  t.classList.remove("off"); t.classList.add("on");
+  carregar(t.dataset.cargo);
+});
+
+function boot(){ carregar("governador"); }
 
 function renderKpis(cands){
   const c = { verde:0, laranja:0, vermelho:0, cinza:0 };

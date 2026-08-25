@@ -1,13 +1,15 @@
 // FV-C · Para cada candidato no D1, busca o detalhe no DivulgaCandContas,
 // mapeia -> ato_oficial, classifica (verde/laranja/vermelho/cinza) e gera
-// db/seed-atos-governador-sp.sql (idempotente).
+// db/seed-atos-<slug>-sp.sql (idempotente).
 //
 // Uso:
-//   node scripts/ingest-atos.mjs           (lê candidatos do D1 LOCAL)
-//   node scripts/ingest-atos.mjs --remote  (lê do D1 REMOTO)
-// Depois: wrangler d1 execute politicos-db [--local|--remote] --file db/seed-atos-governador-sp.sql
+//   node scripts/ingest-atos.mjs                                   (governador, D1 local)
+//   node scripts/ingest-atos.mjs --cargo=deputado-federal --remote
+//   node scripts/ingest-atos.mjs --cargo=deputado-estadual
+// Depois: wrangler d1 execute politicos-db [--local|--remote] --file db/seed-atos-<slug>-sp.sql
 //
 // Roda LOCAL: a API do TSE exige headers de navegador (o client cuida disso).
+// Aviso: dep. federal ~1119, dep. estadual ~1426 → com 800ms/req dá 15-19 min.
 
 import fs from "node:fs";
 import { execSync } from "node:child_process";
@@ -19,16 +21,38 @@ import {
 } from "../worker/src/divulgacand.js";
 import { classificarComMotivo } from "../worker/src/classificar.js";
 
+const CARGOS = {
+  "governador": "GOVERNADOR",
+  "deputado-federal": "DEPUTADO FEDERAL",
+  "deputado-estadual": "DEPUTADO ESTADUAL",
+};
+
+// Cada cargo escreve num range fixo de ato_oficial.id para não colidir entre seeds
+// quando aplicados no mesmo D1 (DELETE só limpa os SQs do próprio cargo).
+const ATO_ID_OFFSET = {
+  "governador": 0,
+  "deputado-federal": 1_000_000,
+  "deputado-estadual": 2_000_000,
+};
+
 const REMOTE = process.argv.includes("--remote");
 const FLAG = REMOTE ? "--remote" : "--local";
+const cargoArg = (process.argv.find((a) => a.startsWith("--cargo=")) || "--cargo=governador").split("=")[1];
+const CARGO_SLUG = cargoArg.toLowerCase();
+const CARGO = CARGOS[CARGO_SLUG];
+if (!CARGO) {
+  console.error(`--cargo desconhecido: ${cargoArg}. Use um de: ${Object.keys(CARGOS).join(", ")}`);
+  process.exit(1);
+}
+
 const ANO = 2026;
 const UE = "SP";
-const OUT = "db/seed-atos-governador-sp.sql";
+const OUT = `db/seed-atos-${CARGO_SLUG}-sp.sql`;
 
 function candidatosDoD1() {
   const cmd =
     `npx wrangler d1 execute politicos-db ${FLAG} --json --config worker/wrangler.jsonc ` +
-    `--command "SELECT sq_candidato, nome_urna FROM candidato WHERE cargo='GOVERNADOR' AND sg_uf='SP'"`;
+    `--command "SELECT sq_candidato, nome_urna FROM candidato WHERE cargo='${CARGO}' AND sg_uf='SP'"`;
   const out = execSync(cmd, { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] });
   const json = JSON.parse(out.slice(out.indexOf("[")));
   return json[0].results;
@@ -40,7 +64,7 @@ const now = new Date().toISOString();
 
 async function main() {
   const cands = candidatosDoD1();
-  console.log(`${cands.length} candidatos lidos do D1 (${FLAG})`);
+  console.log(`${cands.length} candidatos a ${CARGO} lidos do D1 (${FLAG})`);
 
   const detalhes = await comRateLimit(cands, async (c) => {
     const d = await detalheCandidato({ ano: ANO, ue: UE, eleicao: ELEICAO_GERAL_2026, sq: c.sq_candidato });
@@ -50,12 +74,12 @@ async function main() {
   const sqList = cands.map((c) => sqlStr(c.sq_candidato)).join(",");
   let sql =
     `-- gerado por scripts/ingest-atos.mjs em ${now}\n` +
-    `-- atos + classificação de ${cands.length} candidatos (${UE}/GOVERNADOR)\n` +
+    `-- atos + classificação de ${cands.length} candidatos (${UE}/${CARGO})\n` +
     `PRAGMA foreign_keys=OFF;\n` +
     `DELETE FROM classificacao WHERE sq_candidato IN (${sqList});\n` +
     `DELETE FROM ato_oficial   WHERE sq_candidato IN (${sqList});\n`;
 
-  let atoId = 0;
+  let atoId = ATO_ID_OFFSET[CARGO_SLUG];
   const contagem = { verde: 0, laranja: 0, vermelho: 0, cinza: 0 };
 
   for (const { c, d } of detalhes) {

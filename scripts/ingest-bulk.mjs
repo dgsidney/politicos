@@ -1,9 +1,13 @@
 // FV-B · Ingestor bulk de candidatos (TSE dados abertos).
-// Baixa consulta_cand_<ano>.zip, filtra SP + GOVERNADOR, e gera db/seed-governador-sp.sql.
+// Baixa consulta_cand_<ano>.zip, filtra SP + <cargo>, e gera db/seed-<slug>-sp.sql.
 //
-// Rode localmente com `npm run ingest:bulk`. O download funciona com um
-// User-Agent de navegador (abaixo). Se algum dia der 403, tente de um IP no
-// Brasil ou por trás de um proxy BR — o CDN do TSE às vezes bloqueia egress cru.
+// Uso:
+//   node scripts/ingest-bulk.mjs                            (governador, default)
+//   node scripts/ingest-bulk.mjs --cargo=deputado-federal
+//   node scripts/ingest-bulk.mjs --cargo=deputado-estadual
+//
+// O download funciona com um User-Agent de navegador. Se der 403, rode de um
+// IP no Brasil — o CDN do TSE às vezes bloqueia egress cru.
 //
 // Privacidade (LGPD): o CPF NÃO é carregado. A lista de candidatos é pública, o CPF não precisa estar.
 
@@ -13,11 +17,26 @@ import AdmZip from "adm-zip";
 
 const YEAR = 2026;
 const UF = "SP";
-const CARGO = "GOVERNADOR";
+
+// Mapa slug (usado no CLI e no nome do arquivo) → valor real de DS_CARGO no CSV do TSE.
+const CARGOS = {
+  "governador": "GOVERNADOR",
+  "deputado-federal": "DEPUTADO FEDERAL",
+  "deputado-estadual": "DEPUTADO ESTADUAL",
+};
+
+const cargoArg = (process.argv.find((a) => a.startsWith("--cargo=")) || "--cargo=governador").split("=")[1];
+const CARGO_SLUG = cargoArg.toLowerCase();
+const CARGO = CARGOS[CARGO_SLUG];
+if (!CARGO) {
+  console.error(`--cargo desconhecido: ${cargoArg}. Use um de: ${Object.keys(CARGOS).join(", ")}`);
+  process.exit(1);
+}
+
 const ZIP_URL = `https://cdn.tse.jus.br/estatistica/sead/odsele/consulta_cand/consulta_cand_${YEAR}.zip`;
 const RAW_DIR = "db/raw";
 const ZIP_PATH = path.join(RAW_DIR, `consulta_cand_${YEAR}.zip`);
-const OUT_SQL = "db/seed-governador-sp.sql";
+const OUT_SQL = `db/seed-${CARGO_SLUG}-sp.sql`;
 
 async function download() {
   if (fs.existsSync(ZIP_PATH)) {
@@ -87,7 +106,7 @@ function main() {
   for (let i = 1; i < lines.length; i++) {
     const row = parseCsvLine(lines[i]);
     if (pick(header, row, ["SG_UF"]) !== UF) continue;
-    if ((pick(header, row, ["DS_CARGO"]) || "").toUpperCase() !== CARGO) continue;
+    if ((pick(header, row, ["DS_CARGO"]) || "").toUpperCase().trim() !== CARGO) continue;
     const c = {
       sq: pick(header, row, ["SQ_CANDIDATO"]),
       nome: pick(header, row, ["NM_CANDIDATO"]),
@@ -116,8 +135,8 @@ function main() {
   fs.writeFileSync(OUT_SQL, sql);
   console.log("\nSQL escrito em", OUT_SQL);
   console.log("\nCarregar no D1:");
-  console.log("  npx wrangler d1 execute politicos-db --local  --file db/seed-governador-sp.sql");
-  console.log("  npx wrangler d1 execute politicos-db --remote --file db/seed-governador-sp.sql");
+  console.log(`  npx wrangler d1 execute politicos-db --local  --file ${OUT_SQL} --config worker/wrangler.jsonc`);
+  console.log(`  npx wrangler d1 execute politicos-db --remote --file ${OUT_SQL} --config worker/wrangler.jsonc`);
   console.log("\n(Opcional, arquivar o bruto no R2):");
   console.log(`  npx wrangler r2 object put raw-tse/consulta_cand_${YEAR}.zip --file ${ZIP_PATH}`);
 }
