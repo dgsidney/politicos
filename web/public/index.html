@@ -10,6 +10,7 @@
     --accent:#2563eb; --accent-soft:#eaf0ff;
     --verde:#16a34a; --verde-bg:#e7f6ec; --laranja:#e08a1e; --laranja-bg:#fdf1de;
     --vermelho:#dc2f3b; --vermelho-bg:#fdeaec; --cinza:#7a8494; --cinza-bg:#eef1f5;
+    --semdados:#b0b8c4; --semdados-bg:#f3f5f9;
     --shadow:0 1px 2px rgba(20,30,50,.04),0 6px 20px rgba(20,30,50,.05); --radius:16px; --maxw:1060px;
   }
   [data-theme="dark"]{
@@ -17,6 +18,7 @@
     --accent:#6ea8fe; --accent-soft:#1a2333;
     --verde:#3fb27f; --verde-bg:#12231b; --laranja:#e0a458; --laranja-bg:#241d10;
     --vermelho:#e0707a; --vermelho-bg:#241315; --cinza:#8a909c; --cinza-bg:#1d212b;
+    --semdados:#6a7180; --semdados-bg:#171a21;
     --shadow:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
   }
   *{box-sizing:border-box}
@@ -46,6 +48,7 @@
   .donut-legend{font-size:12px;color:var(--muted);display:grid;gap:4px}
   .li{display:flex;align-items:center;gap:6px} .dot{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
   .dot.verde{background:var(--verde)}.dot.laranja{background:var(--laranja)}.dot.vermelho{background:var(--vermelho)}.dot.cinza{background:var(--cinza)}
+  .dot.semdados{background:transparent;border:1.5px solid var(--semdados);box-sizing:border-box}
   h2.section{font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);margin:26px 0 12px;font-weight:600}
   .cardgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .ccard{border:1px solid var(--line);border-radius:14px;background:var(--card2);padding:14px;cursor:pointer;transition:border-color .15s}
@@ -56,6 +59,7 @@
   .pill{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;padding:5px 11px;border-radius:999px;margin-top:12px}
   .pill.verde{color:var(--verde);background:var(--verde-bg)} .pill.laranja{color:var(--laranja);background:var(--laranja-bg)}
   .pill.vermelho{color:var(--vermelho);background:var(--vermelho-bg)} .pill.cinza{color:var(--cinza);background:var(--cinza-bg)}
+  .pill.semdados{color:var(--semdados);background:var(--semdados-bg);border:1px dashed var(--semdados)}
   .party{border-top:1px solid var(--line);padding:12px 0} .party:first-child{border-top:0}
   .party .ph2{display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:8px} .party .ph2 .tot{color:var(--faint);font-size:12px}
   .stack{display:flex;height:12px;border-radius:6px;overflow:hidden;background:var(--cinza-bg)} .stack>span{display:block;height:100%}
@@ -115,9 +119,10 @@
 <div class="mask" id="mask"><div class="modal" id="modal"></div></div>
 
 <script>
-const LABEL = { verde:"Sem apontamento", laranja:"Requer atenção", vermelho:"Ato consumado", cinza:"Aguardando análise" };
-const COLORS = { verde:"var(--verde)", laranja:"var(--laranja)", vermelho:"var(--vermelho)", cinza:"var(--cinza)" };
-const ORDER = ["verde","laranja","vermelho","cinza"];
+const LABEL = { verde:"Sem apontamento", laranja:"Requer atenção", vermelho:"Ato consumado", cinza:"Aguardando análise", semdados:"Não coletado" };
+const COLORS = { verde:"var(--verde)", laranja:"var(--laranja)", vermelho:"var(--vermelho)", cinza:"var(--cinza)", semdados:"var(--semdados)" };
+const ORDER = ["verde","laranja","vermelho","cinza","semdados"];
+const balde = (x) => x.balde ?? "semdados";
 const CARGO_TITULO = {
   "governador": "Candidatos a Governador · SP",
   "deputado-federal": "Candidatos a Deputado Federal · SP",
@@ -155,8 +160,8 @@ document.getElementById("tabs").addEventListener("click", (e) => {
 function boot(){ carregar("governador"); }
 
 function renderKpis(cands){
-  const c = { verde:0, laranja:0, vermelho:0, cinza:0 };
-  cands.forEach(x => c[x.balde ?? "cinza"]++);
+  const c = { verde:0, laranja:0, vermelho:0, cinza:0, semdados:0 };
+  cands.forEach(x => c[balde(x)]++);
   const total = cands.length || 1;
   let acc = 0; const segs = ORDER.map(b=>{ const from=acc/total*360; acc+=c[b]; const to=acc/total*360; return `${COLORS[b]} ${from}deg ${to}deg`; }).join(",");
   document.getElementById("kpis").innerHTML = `
@@ -168,16 +173,17 @@ function renderKpis(cands){
           <span class="li"><span class="dot laranja"></span> ${c.laranja} requer atenção</span>
           <span class="li"><span class="dot vermelho"></span> ${c.vermelho} ato consumado</span>
           <span class="li"><span class="dot cinza"></span> ${c.cinza} aguardando</span>
+          ${c.semdados ? `<span class="li"><span class="dot semdados"></span> ${c.semdados} não coletado</span>` : ""}
         </div>
       </div></div>
     <div class="kpi tint-l"><div class="k">Requerem atenção</div><div class="v">${c.laranja}</div><div class="sub">trâmite não julgado</div></div>
     <div class="kpi tint-r"><div class="k">Ato consumado</div><div class="v">${c.vermelho}</div><div class="sub">indeferido / inelegível</div></div>
-    <div class="kpi tint-c"><div class="k">Aguardando análise</div><div class="v">${c.cinza}</div><div class="sub">registro não julgado</div></div>`;
+    <div class="kpi tint-c"><div class="k">${c.semdados ? "Não coletados" : "Aguardando análise"}</div><div class="v">${c.semdados || c.cinza}</div><div class="sub">${c.semdados ? "ingestão pendente" : "registro não julgado"}</div></div>`;
 }
 
 function renderGrid(cands){
   document.getElementById("grid").innerHTML = cands.map(x=>{
-    const b = x.balde ?? "cinza";
+    const b = balde(x);
     return `<div class="ccard" data-sq="${esc(x.sq_candidato)}">
       <div class="hd"><div class="avatar">👤</div>
         <div><div class="nm">${esc(x.nome_urna || x.nome)}</div><div class="mt">${esc(x.partido||"—")} · nº ${esc(x.numero||"")}</div></div></div>
@@ -189,7 +195,7 @@ function renderGrid(cands){
 
 function renderParties(cands){
   const by = {};
-  cands.forEach(x=>{ const p=x.partido||"—"; (by[p] ||= {verde:0,laranja:0,vermelho:0,cinza:0,total:0}); by[p][x.balde??"cinza"]++; by[p].total++; });
+  cands.forEach(x=>{ const p=x.partido||"—"; (by[p] ||= {verde:0,laranja:0,vermelho:0,cinza:0,semdados:0,total:0}); by[p][balde(x)]++; by[p].total++; });
   document.getElementById("parties").innerHTML = Object.entries(by).sort((a,b)=>b[1].total-a[1].total).map(([p,c])=>{
     const seg = ORDER.map(b=> c[b] ? `<span style="width:${c[b]/c.total*100}%;background:${COLORS[b]}"></span>`:"").join("");
     const counts = ORDER.filter(b=>c[b]).map(b=>`<span class="li"><span class="dot ${b}"></span>${c[b]}</span>`).join(" &nbsp; ");
@@ -202,7 +208,7 @@ async function abrir(sq){
   const mask=document.getElementById("mask"), modal=document.getElementById("modal");
   modal.innerHTML = "<div class='mb'>Carregando…</div>"; mask.classList.add("on");
   let d; try{ d = await (await fetch("/api/candidato/"+encodeURIComponent(sq))).json(); }catch(e){ modal.innerHTML="<div class='mb'>Erro.</div>"; return; }
-  const c = d.candidato || {}; const b = c.balde ?? "cinza";
+  const c = d.candidato || {}; const b = balde(c);
   const gavetas = (d.atos||[]).map(a=>`
     <div class="drawer"><div class="dh"><span class="dot ${b}"></span> ${esc(a.descricao||a.tipo)}</div>
       <dl class="kv">
@@ -219,7 +225,7 @@ async function abrir(sq){
         <div class="mt" style="font-size:12.5px;color:var(--faint)">${esc(c.partido||"")} · nº ${esc(c.numero||"")} · ${esc(c.cargo||"")} ${esc(c.sg_uf||"")}</div></div>
       <button class="x" id="closeM">×</button></div>
     <div class="mb"><span class="pill ${b}" style="margin:0 0 12px"><span class="dot ${b}"></span> ${LABEL[b]}</span>
-      ${gavetas || "<p class='note'>Sem atos registrados na fonte.</p>"}</div>`;
+      ${gavetas || (b === "semdados" ? "<p class='note'>Ainda não coletamos atos deste candidato. A ingestão do cargo está pendente.</p>" : "<p class='note'>Sem atos registrados na fonte.</p>")}</div>`;
   document.getElementById("closeM").onclick=()=>mask.classList.remove("on");
 }
 document.getElementById("mask").onclick=e=>{ if(e.target.id==="mask") e.currentTarget.classList.remove("on"); };
