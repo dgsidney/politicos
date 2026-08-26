@@ -39,6 +39,7 @@ export function normalizarSituacaoRegistro(desc) {
   const d = (desc || "").toLowerCase();
   if (d.includes("aguardando")) return "aguardando";
   if (d.includes("cassad")) return "cassado";
+  if (d.includes("renúncia") || d.includes("renuncia")) return "renuncia";
   if (d.includes("indeferido") && (d.includes("prazo recursal") || d.includes("com recurso"))) return "sub_judice";
   if (d.includes("indeferido")) return "indeferido";
   if (d.includes("deferido com recurso")) return "sub_judice";

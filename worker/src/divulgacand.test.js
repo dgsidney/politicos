@@ -34,6 +34,11 @@ describe("normalizarSituacaoRegistro (FV-C · régua Ficha Limpa)", () => {
     expect(normalizarSituacaoRegistro("Cassado")).toBe("cassado");
   });
 
+  it("renúncia → renuncia (fora da lista, não classificado)", () => {
+    expect(normalizarSituacaoRegistro("Renúncia")).toBe("renuncia");
+    expect(normalizarSituacaoRegistro("Renuncia")).toBe("renuncia");
+  });
+
   it("desconhecido / vazio → aguardando (fallback seguro)", () => {
     expect(normalizarSituacaoRegistro("")).toBe("aguardando");
     expect(normalizarSituacaoRegistro(null)).toBe("aguardando");

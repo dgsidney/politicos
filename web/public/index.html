@@ -108,6 +108,7 @@
   <div class="kpis" id="kpis"></div>
 
   <h2 class="section" id="secTitle">Candidatos a Governador · SP</h2>
+  <p id="renuncNote" style="font-size:12px;color:var(--faint);margin:-6px 0 12px;display:none"></p>
   <div class="cardgrid" id="grid"></div>
 
   <h2 class="section">Por partido · contagem</h2>
@@ -142,10 +143,16 @@ async function carregar(cargoSlug){
   document.getElementById("grid").innerHTML = "<p style='color:var(--faint);font-size:13px'>Carregando…</p>";
   document.getElementById("kpis").innerHTML = "";
   document.getElementById("parties").innerHTML = "";
+  document.getElementById("renuncNote").style.display = "none";
   let data;
   try { data = await (await fetch("/api/candidatos/" + encodeURIComponent(cargoSlug))).json(); }
   catch(e){ document.getElementById("grid").innerHTML = "<p>Erro ao carregar dados.</p>"; return; }
   const cands = data.candidatos || [];
+  const nota = document.getElementById("renuncNote");
+  if (data.renunciados > 0) {
+    nota.textContent = `${data.renunciados} candidato(s) renunciaram — não aparecem nesta lista.`;
+    nota.style.display = "block";
+  }
   renderKpis(cands); renderGrid(cands); renderParties(cands);
 }
 

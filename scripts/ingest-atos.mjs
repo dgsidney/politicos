@@ -80,7 +80,7 @@ async function main() {
     `DELETE FROM ato_oficial   WHERE sq_candidato IN (${sqList});\n`;
 
   let atoId = ATO_ID_OFFSET[CARGO_SLUG];
-  const contagem = { verde: 0, laranja: 0, vermelho: 0, cinza: 0 };
+  const contagem = { verde: 0, laranja: 0, vermelho: 0, cinza: 0, renuncia: 0 };
 
   for (const { c, d } of detalhes) {
     const atos = mapAtos(d, { ano: ANO, ue: UE, eleicao: ELEICAO_GERAL_2026, sq: c.sq_candidato });
@@ -90,6 +90,13 @@ async function main() {
         `INSERT INTO ato_oficial (id,sq_candidato,tipo,situacao,descricao,orgao,numero_processo,data_ato,fonte_url,fonte_coletada_em) VALUES (` +
         `${a._id},${sqlStr(c.sq_candidato)},${sqlStr(a.tipo)},${sqlStr(a.situacao)},${sqlStr(a.descricao)},` +
         `${sqlStr(a.orgao)},${sqlStr(a.numero_processo)},${sqlStr(a.data_ato)},${sqlStr(a.fonte_url)},${sqlStr(a.fonte_coletada_em)});\n`;
+    }
+    // Renunciados saem da lista — atos ficam registrados (auditoria), mas sem classificacao.
+    // A API filtra WHERE NOT EXISTS ato_oficial.situacao='renuncia'.
+    if (atos.some((a) => a.tipo === "registro" && a.situacao === "renuncia")) {
+      contagem.renuncia++;
+      console.log(`  ${c.nome_urna}: RENÚNCIA (fora da lista)`);
+      continue;
     }
     const { balde, motivo } = classificarComMotivo(atos);
     contagem[balde]++;
