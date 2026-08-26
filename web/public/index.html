@@ -35,8 +35,22 @@
   .disclaimer b{color:var(--ink)}
   .filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:0 0 16px}
   .tabs{display:flex;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:999px;padding:4px}
-  .tab{font-size:13px;color:var(--muted);padding:6px 14px;border-radius:999px}
+  .tab{font-size:13px;color:var(--muted);padding:6px 14px;border-radius:999px;cursor:pointer}
   .tab.on{color:#fff;background:var(--accent)} .tab.off{opacity:.5}
+  .toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:0 0 12px}
+  .toolbar input,.toolbar select{padding:7px 11px;border:1px solid var(--line);background:var(--card);color:var(--ink);border-radius:8px;font-size:13px;outline:none}
+  .toolbar input:focus,.toolbar select:focus{border-color:var(--accent)}
+  .toolbar input{flex:1;min-width:180px}
+  .chipbar{display:flex;gap:4px;flex-wrap:wrap}
+  .chip{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;font-size:12px;cursor:pointer;border:1px solid var(--line);color:var(--muted);background:var(--card);user-select:none;line-height:1}
+  .chip:hover{border-color:var(--accent)}
+  .chip.on.verde{color:var(--verde);border-color:var(--verde);background:var(--verde-bg)}
+  .chip.on.laranja{color:var(--laranja);border-color:var(--laranja);background:var(--laranja-bg)}
+  .chip.on.vermelho{color:var(--vermelho);border-color:var(--vermelho);background:var(--vermelho-bg)}
+  .chip.on.cinza{color:var(--cinza);border-color:var(--cinza);background:var(--cinza-bg)}
+  .btnClear{padding:5px 10px;border-radius:999px;font-size:12px;cursor:pointer;border:1px solid var(--line);color:var(--muted);background:transparent}
+  .btnClear:hover{color:var(--ink);border-color:var(--accent)}
+  .resCount{font-size:12px;color:var(--faint);margin:0 0 8px}
   .kpis{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;gap:12px;margin-bottom:14px}
   .kpi{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:15px 16px;box-shadow:var(--shadow)}
   .kpi .k{font-size:12px;color:var(--faint)} .kpi .v{font-size:26px;font-weight:650;margin-top:4px;letter-spacing:-.5px} .kpi .sub{font-size:12px;color:var(--muted);margin-top:3px}
@@ -56,7 +70,10 @@
   .ccard .hd{display:flex;align-items:center;gap:11px}
   .avatar{width:44px;height:44px;border-radius:11px;background:var(--cinza-bg);display:flex;align-items:center;justify-content:center;font-size:16px;color:var(--faint);flex:0 0 auto}
   .ccard .nm{font-size:15px;font-weight:600} .ccard .mt{font-size:12px;color:var(--faint)}
-  .pill{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;padding:5px 11px;border-radius:999px;margin-top:12px}
+  .ccard .partido{color:var(--muted);cursor:pointer;border-radius:4px;padding:1px 4px;margin:-1px -4px}
+  .ccard .partido:hover{background:var(--accent-soft);color:var(--accent)}
+  .pill{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;padding:5px 11px;border-radius:999px;margin-top:12px;cursor:pointer}
+  .pill:hover{outline:2px solid var(--accent);outline-offset:1px}
   .pill.verde{color:var(--verde);background:var(--verde-bg)} .pill.laranja{color:var(--laranja);background:var(--laranja-bg)}
   .pill.vermelho{color:var(--vermelho);background:var(--vermelho-bg)} .pill.cinza{color:var(--cinza);background:var(--cinza-bg)}
   .pill.semdados{color:var(--semdados);background:var(--semdados-bg);border:1px dashed var(--semdados)}
@@ -105,10 +122,23 @@
     </div>
   </div>
 
+  <div class="toolbar">
+    <input id="q" type="search" placeholder="Buscar por nome…" autocomplete="off">
+    <select id="fPartido"><option value="">Todos os partidos</option></select>
+    <div class="chipbar" id="fStatus">
+      <span class="chip" data-balde="verde"><span class="dot verde"></span>Verde</span>
+      <span class="chip" data-balde="laranja"><span class="dot laranja"></span>Laranja</span>
+      <span class="chip" data-balde="vermelho"><span class="dot vermelho"></span>Vermelho</span>
+      <span class="chip" data-balde="cinza"><span class="dot cinza"></span>Cinza</span>
+    </div>
+    <button class="btnClear" id="clearF">Limpar</button>
+  </div>
+
   <div class="kpis" id="kpis"></div>
 
   <h2 class="section" id="secTitle">Candidatos a Governador · SP</h2>
   <p id="renuncNote" style="font-size:12px;color:var(--faint);margin:-6px 0 12px;display:none"></p>
+  <p class="resCount" id="resCount"></p>
   <div class="cardgrid" id="grid"></div>
 
   <h2 class="section">Por partido · contagem</h2>
@@ -138,22 +168,58 @@ document.getElementById("tgl").onclick = function(){
 
 function esc(s){ return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c])); }
 
+const state = { cargo:"governador", cands:[], nome:"", partido:"", balde:null };
+
 async function carregar(cargoSlug){
+  state.cargo = cargoSlug;
   document.getElementById("secTitle").textContent = CARGO_TITULO[cargoSlug] || "Candidatos";
   document.getElementById("grid").innerHTML = "<p style='color:var(--faint);font-size:13px'>Carregando…</p>";
   document.getElementById("kpis").innerHTML = "";
   document.getElementById("parties").innerHTML = "";
   document.getElementById("renuncNote").style.display = "none";
+  document.getElementById("resCount").textContent = "";
   let data;
   try { data = await (await fetch("/api/candidatos/" + encodeURIComponent(cargoSlug))).json(); }
   catch(e){ document.getElementById("grid").innerHTML = "<p>Erro ao carregar dados.</p>"; return; }
-  const cands = data.candidatos || [];
+  state.cands = data.candidatos || [];
   const nota = document.getElementById("renuncNote");
   if (data.renunciados > 0) {
     nota.textContent = `${data.renunciados} candidato(s) renunciaram — não aparecem nesta lista.`;
     nota.style.display = "block";
   }
-  renderKpis(cands); renderGrid(cands); renderParties(cands);
+  popularPartidos(state.cands);
+  renderKpis(state.cands);
+  renderParties(state.cands);
+  aplicarFiltros();
+}
+
+function popularPartidos(cands){
+  const sel = document.getElementById("fPartido");
+  const partidos = [...new Set(cands.map(x => x.partido).filter(Boolean))].sort();
+  sel.innerHTML = `<option value="">Todos os partidos</option>` +
+    partidos.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join("");
+  sel.value = state.partido;
+}
+
+function candsFiltrados(){
+  const q = state.nome.toLowerCase().trim();
+  return state.cands.filter(x => {
+    if (q) {
+      const nm = ((x.nome_urna||"") + " " + (x.nome||"")).toLowerCase();
+      if (!nm.includes(q)) return false;
+    }
+    if (state.partido && x.partido !== state.partido) return false;
+    if (state.balde && balde(x) !== state.balde) return false;
+    return true;
+  });
+}
+
+function aplicarFiltros(){
+  const sub = candsFiltrados();
+  const total = state.cands.length;
+  document.getElementById("resCount").textContent =
+    sub.length === total ? `${total} candidato(s)` : `${sub.length} de ${total} candidato(s)`;
+  renderGrid(sub);
 }
 
 document.getElementById("tabs").addEventListener("click", (e) => {
@@ -161,8 +227,35 @@ document.getElementById("tabs").addEventListener("click", (e) => {
   if (!t || t.classList.contains("on")) return;
   document.querySelectorAll("#tabs .tab").forEach(x => { x.classList.remove("on"); x.classList.add("off"); });
   t.classList.remove("off"); t.classList.add("on");
+  state.nome = ""; state.partido = ""; state.balde = null;
+  document.getElementById("q").value = "";
+  document.getElementById("fPartido").value = "";
+  document.querySelectorAll("#fStatus .chip").forEach(c => c.classList.remove("on", "verde", "laranja", "vermelho", "cinza"));
   carregar(t.dataset.cargo);
 });
+
+document.getElementById("q").addEventListener("input", (e) => { state.nome = e.target.value; aplicarFiltros(); });
+document.getElementById("fPartido").addEventListener("change", (e) => { state.partido = e.target.value; aplicarFiltros(); });
+document.getElementById("fStatus").addEventListener("click", (e) => {
+  const c = e.target.closest(".chip"); if (!c) return;
+  const b = c.dataset.balde;
+  setBalde(state.balde === b ? null : b);
+});
+document.getElementById("clearF").addEventListener("click", () => {
+  state.nome = ""; state.partido = ""; state.balde = null;
+  document.getElementById("q").value = "";
+  document.getElementById("fPartido").value = "";
+  setBalde(null);
+});
+
+function setBalde(b){
+  state.balde = b;
+  document.querySelectorAll("#fStatus .chip").forEach(c => {
+    c.classList.remove("on", "verde", "laranja", "vermelho", "cinza");
+    if (c.dataset.balde === b) { c.classList.add("on", b); }
+  });
+  aplicarFiltros();
+}
 
 function boot(){ carregar("governador"); }
 
@@ -189,15 +282,36 @@ function renderKpis(cands){
 }
 
 function renderGrid(cands){
-  document.getElementById("grid").innerHTML = cands.map(x=>{
+  const grid = document.getElementById("grid");
+  if (!cands.length) {
+    grid.innerHTML = `<p style="color:var(--faint);font-size:13px;grid-column:1/-1">Nenhum candidato bate com os filtros. <a href="#" id="clearInline" style="color:var(--accent);text-decoration:none">Limpar</a></p>`;
+    const c = document.getElementById("clearInline");
+    if (c) c.onclick = (e) => { e.preventDefault(); document.getElementById("clearF").click(); };
+    return;
+  }
+  grid.innerHTML = cands.map(x=>{
     const b = balde(x);
+    const p = x.partido || "";
     return `<div class="ccard" data-sq="${esc(x.sq_candidato)}">
       <div class="hd"><div class="avatar">👤</div>
-        <div><div class="nm">${esc(x.nome_urna || x.nome)}</div><div class="mt">${esc(x.partido||"—")} · nº ${esc(x.numero||"")}</div></div></div>
-      <span class="pill ${b}"><span class="dot ${b}"></span> ${LABEL[b]}</span>
+        <div><div class="nm">${esc(x.nome_urna || x.nome)}</div><div class="mt">${p ? `<span class="partido" data-partido="${esc(p)}">${esc(p)}</span>` : "—"} · nº ${esc(x.numero||"")}</div></div></div>
+      <span class="pill ${b}" data-balde="${b}"><span class="dot ${b}"></span> ${LABEL[b]}</span>
     </div>`;
   }).join("");
-  document.querySelectorAll(".ccard").forEach(el=> el.onclick=()=>abrir(el.dataset.sq));
+  grid.querySelectorAll(".ccard").forEach(el => {
+    el.onclick = (e) => {
+      const partidoEl = e.target.closest(".partido");
+      if (partidoEl) {
+        state.partido = partidoEl.dataset.partido;
+        document.getElementById("fPartido").value = state.partido;
+        aplicarFiltros();
+        return;
+      }
+      const pillEl = e.target.closest(".pill");
+      if (pillEl) { setBalde(pillEl.dataset.balde); return; }
+      abrir(el.dataset.sq);
+    };
+  });
 }
 
 function renderParties(cands){
