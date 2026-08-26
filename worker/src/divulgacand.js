@@ -31,11 +31,16 @@ export function fonteUrlCandidato({ eleicao, ue, sq }) {
 
 // Normaliza a descrição de situação do TSE nos tokens internos que classificar() entende.
 // Regra de segurança: desconhecido → 'aguardando' (cinza). Nunca inventar vermelho.
+//
+// Ficha Limpa: só é ato consumado (vermelho) quando o indeferimento transitou ou foi
+// confirmado por órgão colegiado. "Em prazo recursal" (janela aberta) e "com recurso"
+// (recurso pendente) são trâmite não julgado → sub_judice (laranja).
 export function normalizarSituacaoRegistro(desc) {
   const d = (desc || "").toLowerCase();
   if (d.includes("aguardando")) return "aguardando";
   if (d.includes("cassad")) return "cassado";
-  if (d.includes("indeferido")) return "indeferido"; // com ou sem recurso: o ato existente é o indeferimento
+  if (d.includes("indeferido") && (d.includes("prazo recursal") || d.includes("com recurso"))) return "sub_judice";
+  if (d.includes("indeferido")) return "indeferido";
   if (d.includes("deferido com recurso")) return "sub_judice";
   if (d === "deferido" || d.includes("deferido")) return "deferido";
   return "aguardando";
